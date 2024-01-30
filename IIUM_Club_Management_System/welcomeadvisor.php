@@ -7,7 +7,6 @@ $advisorID = isset($_GET['id']) ? $_GET['id'] : "your_supervisor_id";
 $advisorQuery = "SELECT * FROM advisor WHERE StaffID = '$advisorID'";
 $advisorResult = $conn->query($advisorQuery);
 
-
 // Fetch advisor details
 $advisor = $advisorResult->fetch_assoc();
 
@@ -21,13 +20,32 @@ if (!$clubResult) {
 
 $club = $clubResult->fetch_assoc();
 
-// Query to fetch mainboard list linked with student table
-$mainboardQuery = "SELECT s.StudentID, s.Name, s.Email, s.Cont_Num, s.Kulliyyah, m.position AS Committee
+// Query to fetch mainboard list with Retirement Date
+$mainboardQuery = "SELECT
+                       m.StudentID,
+                       s.Name,
+                       s.Email,
+                       s.Cont_Num,
+                       s.Kulliyyah,
+                       m.position AS Committee,
+                       m.JoinDate,
+                       MAINBOARD_RETIRE(m.JoinDate) AS RetirementDate
                    FROM mainboard m
                    JOIN student s ON m.StudentID = s.StudentID
                    WHERE m.ClubID = '{$advisor['ClubID']}'";
 $mainboardResult = $conn->query($mainboardQuery);
 
+// Call the function to get the total mainboard count
+$clubID = $club['ClubID'];
+$mainboardCountQuery = "SELECT GetClubMemberCount($clubID) AS MainboardCount";
+$mainboardCountResult = $conn->query($mainboardCountQuery);
+
+if (!$mainboardCountResult) {
+    die("Error calling function: " . $conn->error);
+}
+
+$row = $mainboardCountResult->fetch_assoc();
+$mainboardCount = $row['MainboardCount'];
 
 // Query to fetch program details for the specific club
 $programQuery = "SELECT * FROM program WHERE ClubID = '{$advisor['ClubID']}'";
@@ -50,7 +68,7 @@ $programResult = $conn->query($programQuery);
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
             border-radius: 5px;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 50px auto;
             text-align: center;
         }
@@ -84,8 +102,8 @@ $programResult = $conn->query($programQuery);
         }
 
         form.logout-form {
-        position: fixed;
-        top: 10px;
+        position: relative;
+        bottom: 10px;
         right: 10px;
         }
 
@@ -134,6 +152,8 @@ $programResult = $conn->query($programQuery);
                 <th>Contact Number</th>
                 <th>Kulliyyah</th>
                 <th>Level of Study</th>
+                <th>Join Date</th>
+                <th>Retirement Date</th>
             </tr>
             <?php
             while ($mainboard = $mainboardResult->fetch_assoc()) {
@@ -144,10 +164,15 @@ $programResult = $conn->query($programQuery);
                 echo "<td>{$mainboard['Cont_Num']}</td>";
                 echo "<td>{$mainboard['Kulliyyah']}</td>";
                 echo "<td>{$mainboard['Committee']}</td>";
+                echo "<td>{$mainboard['JoinDate']}</td>";
+                echo "<td>{$mainboard['RetirementDate']}</td>";
                 echo "</tr>";
             }
             ?>
         </table>
+
+        <p>Total Mainboards for <?php echo $club['ClubName']; ?>: <?php echo $mainboardCount; ?></p>
+
         <p>Program List:</p>
         <table>
             <tr>
