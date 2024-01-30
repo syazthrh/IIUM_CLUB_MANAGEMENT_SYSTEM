@@ -16,7 +16,7 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
             border-radius: 5px;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 50px auto;
             text-align: center;
         }
@@ -117,31 +117,66 @@
 
         <!-- Table to display list of students who joined the program -->
         <table>
-            <tr>
-                <th>Student ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Contact Number</th>
-                <th>Kulliyyah</th>
-                <th>Position</th>
-            </tr>
-            <?php
-            while ($rowStudent = $resultStudents->fetch_assoc()) {
-                echo "<tr>";
-                echo "<td>" . $rowStudent['StudentID'] . "</td>";
-                echo "<td>" . $rowStudent['Name'] . "</td>";
-                echo "<td>" . $rowStudent['Email'] . "</td>";
-                echo "<td>" . $rowStudent['Cont_Num'] . "</td>";
-                echo "<td>" . $rowStudent['Kulliyyah'] . "</td>";
-                echo "<td>" . $rowStudent['Committee'] . "</td>";
-                echo "</tr>";
-            }
-            ?>
-        </table>
+    <tr>
+        <th>Student ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Contact Number</th>
+        <th>Kulliyyah</th>
+        <th>Position</th>
+        <th>Action</th> <!-- New column for the "Delete" button -->
+    </tr>
+    <?php
+    while ($rowStudent = $resultStudents->fetch_assoc()) {
+        echo "<tr>";
+        echo "<td>" . $rowStudent['StudentID'] . "</td>";
+        echo "<td>" . $rowStudent['Name'] . "</td>";
+        echo "<td>" . $rowStudent['Email'] . "</td>";
+        echo "<td>" . $rowStudent['Cont_Num'] . "</td>";
+        echo "<td>" . $rowStudent['Kulliyyah'] . "</td>";
+        echo "<td>" . $rowStudent['Committee'] . "</td>";
+        // Add the "Delete" button
+        echo "<td><button onclick=\"deleteStudent('".$rowStudent['StudentID']."')\">Delete</button></td>";
+        echo "</tr>";
+    }
+    ?>
+</table>
 
-        <!-- Update List and Go Back buttons -->
-        <button onclick="window.location.href='updatelist.php?program=<?php echo $programID; ?>'">Update List</button>
-        <a href='javascript:history.go(-1)'>Go Back</a>
-    </div>
-</body>
+<!-- Update List and Go Back buttons -->
+<button onclick="window.location.href='updatelist.php?program=<?php echo $programID; ?>'">Update List</button>
+<a href='javascript:history.go(-1)'>Go Back</a>
+
+<script>
+    function deleteStudent(studentID) {
+        if (confirm("Are you sure you want to delete this student from the program?")) {
+            // AJAX request to delete the student
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "program.php?program=<?php echo $programID; ?>&delete_student=" + studentID, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    // Reload the page after deletion
+                    location.reload();
+                }
+            };
+            xhr.send();
+        }
+    }
+</script>
+
+<?php
+// Check if a student needs to be deleted
+if (isset($_GET['delete_student'])) {
+    $studentIDToDelete = $_GET['delete_student'];
+
+    // Perform the deletion from student_program table
+    $queryDelete = "DELETE FROM student_program WHERE ProgramID = '$programID' AND StudentID = '$studentIDToDelete'";
+    $resultDelete = $conn->query($queryDelete);
+
+    if ($resultDelete) {
+        echo "<script>alert('Student deleted successfully.');</script>";
+    } else {
+        echo "<script>alert('Error deleting student: " . $conn->error . "');</script>";
+    }
+}
+?>
 </html>
